@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { PlayCircle, Trash2 } from "lucide-react";
+import { PlayCircle, Trash2, Mic, StopCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -11,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const RecordingItem = ({ recording, onLabelChange, onDelete }) => (
   <div className="flex items-center justify-between p-4 border rounded-lg mb-4">
@@ -42,6 +42,10 @@ const RecordingItem = ({ recording, onLabelChange, onDelete }) => (
 
 const Recordings = () => {
   const [recordings, setRecordings] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingError, setRecordingError] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const handleUpload = (event) => {
     const file = event.target.files[0];
@@ -50,6 +54,7 @@ const Recordings = () => {
         id: Date.now(),
         name: file.name,
         label: "not-crying",
+        blob: file,
       };
       setRecordings([...recordings, newRecording]);
     }
@@ -67,15 +72,72 @@ const Recordings = () => {
     setRecordings(recordings.filter((rec) => rec.id !== id));
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const newRecording = {
+          id: Date.now(),
+          name: `Recording ${recordings.length + 1}`,
+          label: "not-crying",
+          blob: audioBlob,
+        };
+        setRecordings([...recordings, newRecording]);
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setRecordingError(null);
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      setRecordingError("Error accessing microphone. Please check your permissions.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Manage Baby Recordings</h1>
 
+      {recordingError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{recordingError}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Upload Recording</h2>
-        <div className="flex items-center space-x-4">
+        <h2 className="text-xl font-semibold mb-4">Record or Upload</h2>
+        <div className="flex items-center space-x-4 mb-4">
+          <Button onClick={isRecording ? stopRecording : startRecording}>
+            {isRecording ? (
+              <>
+                <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
+              </>
+            ) : (
+              <>
+                <Mic className="mr-2 h-4 w-4" /> Start Recording
+              </>
+            )}
+          </Button>
           <Input type="file" accept="audio/*" onChange={handleUpload} />
-          <Button>Upload</Button>
+          <Button onClick={() => document.querySelector('input[type="file"]').click()}>
+            Upload
+          </Button>
         </div>
       </div>
 
