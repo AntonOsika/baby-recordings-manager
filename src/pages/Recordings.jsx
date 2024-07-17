@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlayCircle, Trash2, Mic, StopCircle } from "lucide-react";
+import { PlayCircle, Trash2, Mic, StopCircle, Upload } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -11,33 +11,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const RecordingItem = ({ recording, onLabelChange, onDelete }) => (
-  <div className="flex items-center justify-between p-4 border rounded-lg mb-4">
-    <div className="flex items-center space-x-4">
-      <Button variant="ghost" size="icon">
-        <PlayCircle className="h-6 w-6" />
-      </Button>
-      <span>{recording.name}</span>
-    </div>
-    <div className="flex items-center space-x-4">
-      <Select
-        value={recording.label}
-        onValueChange={(value) => onLabelChange(recording.id, value)}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Select label" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="crying">Crying</SelectItem>
-          <SelectItem value="not-crying">Not Crying</SelectItem>
-        </SelectContent>
-      </Select>
-      <Button variant="ghost" size="icon" onClick={() => onDelete(recording.id)}>
-        <Trash2 className="h-5 w-5" />
-      </Button>
-    </div>
-  </div>
+  <Card className="mb-4">
+    <CardContent className="flex items-center justify-between p-4">
+      <div className="flex items-center space-x-4">
+        <Button variant="ghost" size="icon">
+          <PlayCircle className="h-6 w-6" />
+        </Button>
+        <span className="font-medium">{recording.name}</span>
+      </div>
+      <div className="flex items-center space-x-4">
+        <Select
+          value={recording.label}
+          onValueChange={(value) => onLabelChange(recording.id, value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select label" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="crying">Crying</SelectItem>
+            <SelectItem value="not-crying">Not Crying</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="ghost" size="icon" onClick={() => onDelete(recording.id)}>
+          <Trash2 className="h-5 w-5" />
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
 );
 
 const Recordings = () => {
@@ -110,82 +113,102 @@ const Recordings = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Manage Baby Recordings</h1>
+    <div className="container mx-auto p-8">
+      <h1 className="text-4xl font-bold mb-8 text-center">Manage Baby Recordings</h1>
 
       {recordingError && (
-        <Alert variant="destructive" className="mb-4">
+        <Alert variant="destructive" className="mb-8">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{recordingError}</AlertDescription>
         </Alert>
       )}
 
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Record or Upload</h2>
-        <div className="flex items-center space-x-4 mb-4">
-          <Button onClick={isRecording ? stopRecording : startRecording}>
-            {isRecording ? (
-              <>
-                <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
-              </>
-            ) : (
-              <>
-                <Mic className="mr-2 h-4 w-4" /> Start Recording
-              </>
-            )}
-          </Button>
-          <Input type="file" accept="audio/*" onChange={handleUpload} />
-          <Button onClick={() => document.querySelector('input[type="file"]').click()}>
-            Upload
-          </Button>
-        </div>
-      </div>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Record or Upload</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-4">
+            <Button onClick={isRecording ? stopRecording : startRecording}>
+              {isRecording ? (
+                <>
+                  <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
+                </>
+              ) : (
+                <>
+                  <Mic className="mr-2 h-4 w-4" /> Start Recording
+                </>
+              )}
+            </Button>
+            <Input
+              type="file"
+              accept="audio/*"
+              onChange={handleUpload}
+              className="hidden"
+              id="audio-upload"
+            />
+            <Button asChild>
+              <label htmlFor="audio-upload" className="cursor-pointer">
+                <Upload className="mr-2 h-4 w-4" /> Upload Audio
+              </label>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">All Recordings</h2>
-        {recordings.map((recording) => (
-          <RecordingItem
-            key={recording.id}
-            recording={recording}
-            onLabelChange={handleLabelChange}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>All Recordings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recordings.map((recording) => (
+            <RecordingItem
+              key={recording.id}
+              recording={recording}
+              onLabelChange={handleLabelChange}
+              onDelete={handleDelete}
+            />
+          ))}
+        </CardContent>
+      </Card>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Segmented Recordings</h2>
-        <Tabs defaultValue="crying">
-          <TabsList>
-            <TabsTrigger value="crying">Crying</TabsTrigger>
-            <TabsTrigger value="not-crying">Not Crying</TabsTrigger>
-          </TabsList>
-          <TabsContent value="crying">
-            {recordings
-              .filter((rec) => rec.label === "crying")
-              .map((recording) => (
-                <RecordingItem
-                  key={recording.id}
-                  recording={recording}
-                  onLabelChange={handleLabelChange}
-                  onDelete={handleDelete}
-                />
-              ))}
-          </TabsContent>
-          <TabsContent value="not-crying">
-            {recordings
-              .filter((rec) => rec.label === "not-crying")
-              .map((recording) => (
-                <RecordingItem
-                  key={recording.id}
-                  recording={recording}
-                  onLabelChange={handleLabelChange}
-                  onDelete={handleDelete}
-                />
-              ))}
-          </TabsContent>
-        </Tabs>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Segmented Recordings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="crying">
+            <TabsList className="mb-4">
+              <TabsTrigger value="crying">Crying</TabsTrigger>
+              <TabsTrigger value="not-crying">Not Crying</TabsTrigger>
+            </TabsList>
+            <TabsContent value="crying">
+              {recordings
+                .filter((rec) => rec.label === "crying")
+                .map((recording) => (
+                  <RecordingItem
+                    key={recording.id}
+                    recording={recording}
+                    onLabelChange={handleLabelChange}
+                    onDelete={handleDelete}
+                  />
+                ))}
+            </TabsContent>
+            <TabsContent value="not-crying">
+              {recordings
+                .filter((rec) => rec.label === "not-crying")
+                .map((recording) => (
+                  <RecordingItem
+                    key={recording.id}
+                    recording={recording}
+                    onLabelChange={handleLabelChange}
+                    onDelete={handleDelete}
+                  />
+                ))}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
